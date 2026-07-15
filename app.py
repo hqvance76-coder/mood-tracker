@@ -31,7 +31,7 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 
 try:
     # Read the data sheet directly
-df = conn.read(spreadsheet=st.secrets["public_gsheets_url"], worksheet="Form Responses 1", ttl="10s")
+    df = conn.read(spreadsheet=st.secrets["public_gsheets_url"], worksheet="Form Responses 1", ttl="10s")
     
     if df is not None and not df.empty:
         # Dynamically map the columns based on position instead of guessing names!
