@@ -1,12 +1,10 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 import datetime
 import plotly.express as px
 
 st.set_page_config(page_title="Family Mood Tracker", page_icon="🏡", layout="centered")
 
-# Map the text answers to values for our charts
 MOOD_MAPPING = {
     "💙 Blue": 1,
     "💚 Green": 2,
@@ -20,28 +18,32 @@ st.title("🏡 Family Color & Vibration Tracker")
 st.markdown("A shared space to map our energy levels and look out for each other.")
 
 # --- BIG BUTTON TO LOG MOOD ---
-# (Your app URL will stay functional as long as this matches your link)
 FORM_URL = "https://docs.google.com/forms/d/1tUC46lsldbVi8xegpa-TDfRYtBl2o7OLsMtSgjTctlU/viewform"
-
 st.link_button("👉 CLICK HERE TO LOG YOUR MOOD", FORM_URL, type="primary", use_container_width=True)
 st.write("---")
 
-# --- CONNECT AND READ GOOGLE SHEETS ---
-conn = st.connection("gsheets", type=GSheetsConnection)
-
+# --- CONNECT AND READ GOOGLE SHEETS (BULLETPROOF METHOD) ---
 try:
-    # Read the data sheet directly
-    df = conn.read(spreadsheet=st.secrets["public_gsheets_url"], worksheet="Form Responses 1", ttl="10s")
+    # Safely get your link from secrets
+    base_url = st.secrets["public_gsheets_url"]
+    
+    # Clean the link to parse it directly as a clean CSV download (bypasses space errors)
+    if "/edit" in base_url:
+        sheet_id = base_url.split("/d/")[1].split("/edit")[0]
+    else:
+        sheet_id = base_url.split("/d/")[1].split("/")[0]
+        
+    csv_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet=Form+Responses+1"
+    
+    # Read data directly from the generated CSV link
+    df = pd.read_csv(csv_url)
     
     if df is not None and not df.empty:
-        # Dynamically map the columns based on position instead of guessing names!
-        # Column 0 = Timestamp, Column 1 = Name, Column 2 = Color, Column 3 = Notes
         existing_data = pd.DataFrame()
         existing_data["Timestamp"] = pd.to_datetime(df.iloc[:, 0])
         existing_data["Name"] = df.iloc[:, 1].astype(str)
         existing_data["Color"] = df.iloc[:, 2].astype(str)
         
-        # If notes exist, read them, otherwise keep them blank
         if df.shape[1] > 3:
             existing_data["Notes"] = df.iloc[:, 3].fillna("")
         else:
@@ -51,7 +53,7 @@ try:
     else:
         existing_data = pd.DataFrame(columns=["Timestamp", "Name", "Color", "Notes", "Score"])
 except Exception as e:
-    st.error(f"Waiting for initial data matching... Error details: {e}")
+    st.error(f"Connecting to spreadsheet... Please ensure your Secrets link is correct. Details: {e}")
     existing_data = pd.DataFrame(columns=["Timestamp", "Name", "Color", "Notes", "Score"])
 
 # --- DASHBOARD & STREAKS ---
