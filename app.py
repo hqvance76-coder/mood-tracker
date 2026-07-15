@@ -21,7 +21,7 @@ st.markdown("A shared space to map our energy levels and look out for each other
 
 # --- BIG BUTTON TO LOG MOOD ---
 # PASTE YOUR GOOGLE FORM LINK BETWEEN THE QUOTES BELOW:
-FORM_URL = "PASTE_YOUR_COPIED_GOOGLE_FORM_LINK_HERE"
+FORM_URL = "https://docs.google.com/forms/d/1tUC46lsIdbVi8xegpa-TDfRYtBI2o7OLsMtSgjTctIU/edit"
 
 st.link_button("👉 CLICK HERE TO LOG YOUR MOOD", FORM_URL, type="primary", use_container_width=True)
 st.write("---")
