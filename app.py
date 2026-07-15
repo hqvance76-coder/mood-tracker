@@ -7,7 +7,7 @@ st.markdown("A shared space to map our energy levels and look out for each other
 
 # --- BIG BUTTON TO LOG MOOD ---
 # Replace the link below with your actual Google Form link!
-FORM_URL = "https://docs.google.com/forms/d/1tUC46lsldbVi8xegpa-TDfRYtBl2o7OLsMtSgjTctlU/viewform"
+FORM_URL = "https://forms.gle/imZiiFEjqdm7Lu6cA"
 
 st.link_button("👉 CLICK HERE TO LOG YOUR MOOD", FORM_URL, type="primary", use_container_width=True)
 
