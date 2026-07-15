@@ -6,51 +6,41 @@ import plotly.express as px
 
 st.set_page_config(page_title="Family Mood Tracker", page_icon="🏡", layout="centered")
 
-MOOD_SPECTRUM = {
-    "💙 Blue": {"vibe": "Calm / Low Vibration", "score": 1, "color": "#3b82f6"},
-    "💚 Green": {"vibe": "Grounded / Centered", "score": 2, "color": "#10b981"},
-    "💛 Yellow": {"vibe": "Balanced / Neutral", "score": 3, "color": "#eab308"},
-    "🧡 Orange": {"vibe": "Active / Energetic", "score": 4, "color": "#f97316"},
-    "❤️ Red": {"vibe": "Excited / High Vibration", "score": 5, "color": "#ef4444"}
+# Map the exact textual answers from your Google Form to numerical scores for the chart
+MOOD_MAPPING = {
+    "💙 Blue": 1,
+    "💚 Green": 2,
+    "💛 Yellow": 3,
+    "🧡 Orange": 4,
+    "❤️ Red": 5
 }
 FAMILY = ["Heather", "Paul", "Royall", "Parker", "Payton"]
 
 st.title("🏡 Family Color & Vibration Tracker")
+st.markdown("A shared space to map our energy levels and look out for each other.")
 
-# Connect to Google Sheets
+# --- BIG BUTTON TO LOG MOOD ---
+# PASTE YOUR GOOGLE FORM LINK BETWEEN THE QUOTES BELOW:
+FORM_URL = "PASTE_YOUR_COPIED_GOOGLE_FORM_LINK_HERE"
+
+st.link_button("👉 CLICK HERE TO LOG YOUR MOOD", FORM_URL, type="primary", use_container_width=True)
+st.write("---")
+
+# --- CONNECT AND READ GOOGLE SHEETS ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 try:
-    existing_data = conn.read(worksheet="Logs", ttl="1m")
+    # Google Forms automatically creates a tab named "Form Responses 1"
+    existing_data = conn.read(worksheet="Form Responses 1", ttl="1m")
+    
+    # Rename columns to match what Google Form creates so Python can read them easily
+    existing_data.columns = ["Timestamp", "Name", "Color", "Notes"]
+    # Create numerical score column for plotting the trend line
+    existing_data["Score"] = existing_data["Color"].map(MOOD_MAPPING)
 except Exception:
-    existing_data = pd.DataFrame(columns=["Timestamp", "Name", "Color", "Vibration Level", "Score", "Notes"])
+    existing_data = pd.DataFrame(columns=["Timestamp", "Name", "Color", "Notes", "Score"])
 
-# Check-In Form
-st.header("✨ Daily Check-In")
-with st.form(key="mood_form", clear_on_submit=True):
-    name = st.selectbox("Who is checking in?", FAMILY)
-    chosen_mood = st.radio("Select your energy color:", list(MOOD_SPECTRUM.keys()), horizontal=True)
-    notes = st.text_area("Optional Notes:")
-    submit_button = st.form_submit_button(label="Log My Color")
-
-if submit_button:
-    new_entry = pd.DataFrame([{
-        "Timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "Name": name,
-        "Color": chosen_mood,
-        "Vibration Level": MOOD_SPECTRUM[chosen_mood]["vibe"],
-        "Score": MOOD_SPECTRUM[chosen_mood]["score"],
-        "Notes": notes
-    }])
-    updated_data = pd.concat([existing_data, new_entry], ignore_index=True)
-    conn.update(worksheet="Logs", data=updated_data)
-    st.success("💖 Energy logged! Refreshing dashboard...")
-    st.cache_data.clear()
-    st.calendar = None 
-    st.rerun()
-
-# Dashboard & Analytics
-st.write("---")
+# --- DASHBOARD & STREAKS ---
 st.header("📊 Family Dashboard")
 
 if not existing_data.empty:
@@ -77,3 +67,13 @@ if not existing_data.empty:
     fig = px.line(existing_data.tail(30), x='Timestamp', y='Score', color='Name', markers=True, title="Recent Energy Trends")
     fig.update_yaxes(range=[0.5, 5.5], tickvals=[1,2,3,4,5], ticktext=["Blue 💙", "Green 💚", "Yellow 💛", "Orange 🧡", "Red ❤️"])
     st.plotly_chart(fig, use_container_width=True)
+    
+    # Notes Feed
+    st.write("---")
+    st.subheader("📝 Recent Notes")
+    notes_df = existing_data[existing_data['Notes'].fillna('').str.strip().astype(bool)].tail(5)
+    for _, row in notes_df.iloc[::-1].iterrows():
+        st.markdown(f"**{row['Name']}** ({row['Timestamp'].strftime('%a %b %d')}):")
+        st.info(f"\"{row['Notes']}\"")
+else:
+    st.info("No entries found yet! Tap the big button at the top to log your first mood color.")
