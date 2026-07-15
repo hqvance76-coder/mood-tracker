@@ -34,7 +34,7 @@ try:
     existing_data = conn.read(worksheet="Form Responses 1", ttl="1m")
     
     # Rename columns to match what Google Form creates so Python can read them easily
-    existing_data.columns = ["Timestamp", "Name", "Color", "Notes"]
+    existing_data.columns = ["Timestamp", "ID", "Name", "Color", "Notes"]
     # Create numerical score column for plotting the trend line
     existing_data["Score"] = existing_data["Color"].map(MOOD_MAPPING)
 except Exception:
